@@ -1,4 +1,4 @@
-# MiniGPU: An Educational GPU Compiler from Scratch
+# MiniGPU: GPU Compiler from Scratch
 
 > MiniGPU is an educational GPU compiler implemented in C++17. It explores language frontends, intermediate representations, optimization passes, data-flow analysis, graph-coloring register allocation, and PTX code generation through a small, testable kernel language.
 
