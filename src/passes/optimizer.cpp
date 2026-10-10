@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <sstream>
+#include <cmath>
 
 namespace minigpu {
 
@@ -78,6 +79,18 @@ bool ConstantFoldingPass::run_on_function(IRFunction& fn) {
                     } else {
                         inst->operands() = {IRValue::make_float_const(res)};
                     }
+                    changed = true;
+                }
+            } else if (inst->opcode() == IROpcode::FMA && inst->operands().size() == 3) {
+                const auto& o0 = inst->operands()[0];
+                const auto& o1 = inst->operands()[1];
+                const auto& o2 = inst->operands()[2];
+                if (o0.kind() == IRValueKind::ConstantFloat &&
+                    o1.kind() == IRValueKind::ConstantFloat &&
+                    o2.kind() == IRValueKind::ConstantFloat) {
+                    double res = std::fma(o0.float_val(), o1.float_val(), o2.float_val());
+                    inst->set_opcode(IROpcode::Copy);
+                    inst->operands() = {IRValue::make_float_const(res)};
                     changed = true;
                 }
             }
@@ -306,6 +319,61 @@ bool Mem2RegPass::run_on_function(IRFunction& fn) {
     return changed;
 }
 
+// --- Fused Multiply-Add (FMA) Contraction ---
+// Fuses (a * b) + c or c + (a * b) into a single hardware GPU instruction: fma(a, b, c)
+
+bool FMAContractionPass::run_on_function(IRFunction& fn) {
+    bool changed = false;
+
+    for (auto& bb : fn.blocks()) {
+        std::unordered_map<int, IRInstruction*> fmul_defs;
+
+        for (auto& inst : bb->instructions()) {
+            if (inst->opcode() == IROpcode::FMul && inst->has_dest() && inst->dest().is_reg()) {
+                fmul_defs[inst->dest().reg_id()] = inst.get();
+                continue;
+            }
+
+            if (inst->opcode() == IROpcode::FAdd && inst->operands().size() == 2) {
+                const auto& op0 = inst->operands()[0];
+                const auto& op1 = inst->operands()[1];
+
+                // Case 1: op0 is produced by FMul: (a * b) + c
+                if (op0.is_reg() && fmul_defs.count(op0.reg_id())) {
+                    auto* mul = fmul_defs[op0.reg_id()];
+                    if (mul->operands().size() == 2) {
+                        IRValue a = mul->operands()[0];
+                        IRValue b = mul->operands()[1];
+                        IRValue c = op1;
+
+                        inst->set_opcode(IROpcode::FMA);
+                        inst->operands() = {a, b, c};
+                        changed = true;
+                        continue;
+                    }
+                }
+
+                // Case 2: op1 is produced by FMul: c + (a * b)
+                if (op1.is_reg() && fmul_defs.count(op1.reg_id())) {
+                    auto* mul = fmul_defs[op1.reg_id()];
+                    if (mul->operands().size() == 2) {
+                        IRValue a = mul->operands()[0];
+                        IRValue b = mul->operands()[1];
+                        IRValue c = op0;
+
+                        inst->set_opcode(IROpcode::FMA);
+                        inst->operands() = {a, b, c};
+                        changed = true;
+                        continue;
+                    }
+                }
+            }
+        }
+    }
+
+    return changed;
+}
+
 // --- Dead Code Elimination ---
 
 bool DeadCodeEliminationPass::run_on_function(IRFunction& fn) {
@@ -367,6 +435,7 @@ void PassManager::add_default_passes() {
     add_pass(std::make_unique<ConstantFoldingPass>());
     add_pass(std::make_unique<AlgebraicSimplificationPass>());
     add_pass(std::make_unique<CommonSubexpressionEliminationPass>());
+    add_pass(std::make_unique<FMAContractionPass>());
     add_pass(std::make_unique<ConstantPropagationPass>());
     add_pass(std::make_unique<DeadCodeEliminationPass>());
 }

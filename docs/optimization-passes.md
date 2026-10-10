@@ -20,6 +20,9 @@ MiniGPU provides a modular `PassManager` that coordinates function-level optimiz
   CommonSubexpressionEliminationPass
        │ (Reuses identical subexpressions within basic blocks)
        ▼
+  FMAContractionPass
+       │ (Fuses (a * b) + c into hardware GPU fma.rn.f32 instruction)
+       ▼
   ConstantPropagationPass
        │ (Propagates constants resulting from folding)
        ▼
@@ -49,8 +52,11 @@ Applies identities:
 ### 4. Common-Subexpression Elimination (`CommonSubexpressionEliminationPass`)
 Maintains available expressions indexed by `(opcode, operand0, operand1)`. If an identical calculation appears earlier in the block, subsequent occurrences are rewritten to reuse the prior destination register.
 
-### 5. Memory-to-Register Promotion (`Mem2RegPass`)
+### 5. Fused Multiply-Add Contraction (`FMAContractionPass`)
+Specialized GPU hardware arithmetic optimization. Identifies floating-point multiply-accumulate chains `(a * b) + c` or `c + (a * b)` and contracts them into a single 3-operand `fma(a, b, c)` instruction. In the PTX backend, this emits `fma.rn.f32`, which executes in a single cycle on NVIDIA Streaming Multiprocessors with higher IEEE-754 precision (single rounding step) and reduces loop arithmetic instructions by 50% in matrix multiplication (`matmul`).
+
+### 6. Memory-to-Register Promotion (`Mem2RegPass`)
 Tracks stores to local alloca slots. When a subsequent load from the same slot occurs before any clobbering store, the load is converted directly into a register copy.
 
-### 6. Dead-Code Elimination (`DeadCodeEliminationPass`)
+### 7. Dead-Code Elimination (`DeadCodeEliminationPass`)
 Computes the set of all consumed virtual registers. Any instruction whose destination register is never read (and which has no memory or control-flow side effects) is purged. Runs iteratively until a fixed point is reached.

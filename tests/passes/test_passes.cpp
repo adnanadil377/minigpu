@@ -61,11 +61,48 @@ void test_dead_code_elimination() {
     std::cout << "[PASS] test_dead_code_elimination\n";
 }
 
+void test_fma_contraction() {
+    auto fn = std::make_unique<IRFunction>("test_fma", Type::getVoid());
+    auto bb = fn->create_block("entry");
+
+    auto a = fn->create_register(Type::getFloat(), "a");
+    auto b = fn->create_register(Type::getFloat(), "b");
+    auto c = fn->create_register(Type::getFloat(), "c");
+    auto mul_res = fn->create_register(Type::getFloat(), "mul_res");
+    auto add_res = fn->create_register(Type::getFloat(), "add_res");
+
+    // mul_res = a * b
+    bb->add_instruction(std::make_unique<IRInstruction>(
+        IROpcode::FMul, mul_res, std::vector<IRValue>{a, b}));
+    // add_res = mul_res + c
+    bb->add_instruction(std::make_unique<IRInstruction>(
+        IROpcode::FAdd, add_res, std::vector<IRValue>{mul_res, c}));
+    bb->add_instruction(std::make_unique<IRInstruction>(
+        IROpcode::Return, IRValue(), std::vector<IRValue>{add_res}));
+
+    minigpu::FMAContractionPass fma_pass;
+    bool changed = fma_pass.run_on_function(*fn);
+    assert(changed);
+    assert(bb->instructions()[1]->opcode() == IROpcode::FMA);
+    assert(bb->instructions()[1]->operands().size() == 3);
+    assert(bb->instructions()[1]->operands()[0].equals(a));
+    assert(bb->instructions()[1]->operands()[1].equals(b));
+    assert(bb->instructions()[1]->operands()[2].equals(c));
+
+    // Running DCE cleans up the unused mul_res
+    minigpu::DeadCodeEliminationPass dce;
+    dce.run_on_function(*fn);
+    assert(bb->instructions().size() == 2); // FMA and Return
+    assert(bb->instructions()[0]->opcode() == IROpcode::FMA);
+    std::cout << "[PASS] test_fma_contraction (a * b + c -> fma(a, b, c))\n";
+}
+
 int main() {
     std::cout << "--- Running Optimization Pass Tests ---\n";
     test_constant_folding();
     test_algebraic_simplification();
     test_dead_code_elimination();
+    test_fma_contraction();
     std::cout << "All Optimization Pass tests passed!\n";
     return 0;
 }

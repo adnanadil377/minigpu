@@ -256,6 +256,13 @@ void PTXCodeGen::generate_function(IRFunction& fn, std::ostream& out) {
                         << get_ptx_reg(inst->operands()[1]) << ";\n";
                     break;
                 }
+                case IROpcode::FMA: {
+                    out << "    fma.rn.f32 " << get_ptx_reg(inst->dest()) << ", "
+                        << get_ptx_reg(inst->operands()[0]) << ", "
+                        << get_ptx_reg(inst->operands()[1]) << ", "
+                        << get_ptx_reg(inst->operands()[2]) << ";\n";
+                    break;
+                }
                 case IROpcode::ICmpSLT: {
                     out << "    setp.lt.s32 " << get_ptx_reg(inst->dest()) << ", "
                         << get_ptx_reg(inst->operands()[0]) << ", "

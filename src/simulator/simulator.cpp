@@ -1,6 +1,7 @@
 #include "minigpu/simulator.hpp"
 #include <cstring>
 #include <iostream>
+#include <cmath>
 
 namespace minigpu {
 
@@ -225,6 +226,13 @@ bool IRSimulator::execute_thread(IRFunction& fn, ThreadContext& ctx) {
                 case IROpcode::FDiv: {
                     double d = get_float_val(inst->operands()[1]);
                     ctx.reg_float[inst->dest().reg_id()] = (d != 0.0) ? (get_float_val(inst->operands()[0]) / d) : 0.0;
+                    break;
+                }
+                case IROpcode::FMA: {
+                    double a = get_float_val(inst->operands()[0]);
+                    double b = get_float_val(inst->operands()[1]);
+                    double c = get_float_val(inst->operands()[2]);
+                    ctx.reg_float[inst->dest().reg_id()] = std::fma(a, b, c);
                     break;
                 }
                 case IROpcode::ICmpSLT: {

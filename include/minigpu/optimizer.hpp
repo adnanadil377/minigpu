@@ -51,6 +51,12 @@ public:
     bool run_on_function(IRFunction& fn) override;
 };
 
+class FMAContractionPass : public Pass {
+public:
+    std::string name() const override { return "FMAContraction"; }
+    bool run_on_function(IRFunction& fn) override;
+};
+
 class PassManager {
 public:
     PassManager() = default;

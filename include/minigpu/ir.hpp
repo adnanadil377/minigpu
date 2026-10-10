@@ -22,6 +22,7 @@ enum class IROpcode {
     FSub,
     FMul,
     FDiv,
+    FMA,
 
     // Comparisons Integer
     ICmpEQ,

@@ -14,6 +14,7 @@ const char* ir_opcode_to_string(IROpcode op) {
         case IROpcode::FSub: return "fsub";
         case IROpcode::FMul: return "fmul";
         case IROpcode::FDiv: return "fdiv";
+        case IROpcode::FMA: return "fma";
         case IROpcode::ICmpEQ: return "icmp_eq";
         case IROpcode::ICmpNE: return "icmp_ne";
         case IROpcode::ICmpSLT: return "icmp_slt";
