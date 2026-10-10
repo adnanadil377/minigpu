@@ -1,0 +1,40 @@
+name: MiniGPU CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        build_type: [Debug, Release]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up CMake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.25.x'
+
+    - name: Configure CMake
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+    - name: Build MiniGPU Compiler & Tests
+      run: cmake --build build --parallel
+
+    - name: Run CTest Suite
+      run: ctest --test-dir build --output-on-failure
+
+    - name: Run Milestone Integration & CPU Simulation
+      run: |
+        ./build/minigpu --run-cpu examples/vector_add.mgpu
+        ./build/minigpu -o vector_add.ptx examples/vector_add.mgpu
+        ./build/minigpu -o scale.ptx examples/scale.mgpu
+        ./build/minigpu -o matmul.ptx examples/matmul.mgpu
+        ./scripts/validate_ptx.sh

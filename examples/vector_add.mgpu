@@ -1,0 +1,6 @@
+kernel vector_add(float* A, float* B, float* C, int N) {
+    int i = thread_id_x();
+    if (i < N) {
+        C[i] = A[i] + B[i];
+    }
+}

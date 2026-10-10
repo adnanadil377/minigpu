@@ -1,0 +1,23 @@
+# Build artifacts
+build/
+bin/
+.cache/
+*.o
+*.a
+*.dylib
+*.so
+
+# Generated PTX files
+vector_add.ptx
+scale.ptx
+matmul.ptx
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.DS_Store
+compile_commands.json
+
+# Benchmarks output
+benchmarks/results/*.json
