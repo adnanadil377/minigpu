@@ -20,7 +20,8 @@ std::unique_ptr<minigpu::IRModule> compile_source(const std::string& src) {
     assert(!parser.has_errors());
 
     minigpu::SemanticAnalyzer sema;
-    assert(sema.analyze(*ast));
+    bool sema_ok = sema.analyze(*ast);
+    assert(sema_ok);
 
     minigpu::IRGen irgen;
     auto module = irgen.emit_module(*ast);

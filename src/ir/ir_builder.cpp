@@ -304,7 +304,10 @@ IRValue IRGen::emit_lvalue(ExprAST& expr) {
         arr->index().accept(*this);
         IRValue idx = last_value_;
 
-        auto elem_type = arr->array().inferred_type()->element_type();
+        auto arr_type = arr->array().inferred_type();
+        std::shared_ptr<Type> elem_type = (arr_type && arr_type->is_pointer())
+                                            ? arr_type->element_type()
+                                            : Type::getFloat();
         auto gep_reg = current_fn_->create_register(Type::getPointer(elem_type), "gep_addr");
 
         emit_instruction(std::make_unique<IRInstruction>(
@@ -316,7 +319,7 @@ IRValue IRGen::emit_lvalue(ExprAST& expr) {
 
 void IRGen::visit(ArrayAccessExpr& node) {
     auto ptr = emit_lvalue(node);
-    auto elem_type = node.inferred_type();
+    auto elem_type = node.inferred_type() ? node.inferred_type() : Type::getFloat();
     auto load_reg = current_fn_->create_register(elem_type, "arr_elem");
     emit_instruction(std::make_unique<IRInstruction>(
         IROpcode::Load, load_reg, std::vector<IRValue>{ptr}, node.loc()));
@@ -344,7 +347,8 @@ void IRGen::visit(AssignExpr& node) {
             default: break;
         }
 
-        auto res_reg = current_fn_->create_register(node.inferred_type(), "op_assign");
+        auto res_type = node.inferred_type() ? node.inferred_type() : (is_float ? Type::getFloat() : Type::getInt());
+        auto res_reg = current_fn_->create_register(res_type, "op_assign");
         emit_instruction(std::make_unique<IRInstruction>(
             op, res_reg, std::vector<IRValue>{lhs, rhs}, node.loc()));
         rhs = res_reg;

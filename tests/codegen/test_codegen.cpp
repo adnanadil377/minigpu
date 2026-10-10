@@ -18,7 +18,8 @@ void test_ptx_generation() {
     minigpu::Parser parser(tokens);
     auto ast = parser.parse_program();
     minigpu::SemanticAnalyzer sema;
-    assert(sema.analyze(*ast));
+    bool sema_ok = sema.analyze(*ast);
+    assert(sema_ok);
 
     minigpu::IRGen irgen;
     auto module = irgen.emit_module(*ast);

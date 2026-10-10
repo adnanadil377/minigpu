@@ -14,7 +14,8 @@ void test_ir_generation_and_verifier() {
     minigpu::Parser parser(tokens);
     auto ast = parser.parse_program();
     minigpu::SemanticAnalyzer sema;
-    assert(sema.analyze(*ast));
+    bool sema_ok = sema.analyze(*ast);
+    assert(sema_ok);
 
     minigpu::IRGen irgen;
     auto module = irgen.emit_module(*ast);
@@ -33,7 +34,8 @@ void test_cfg_reachability() {
     minigpu::Parser parser(tokens);
     auto ast = parser.parse_program();
     minigpu::SemanticAnalyzer sema;
-    assert(sema.analyze(*ast));
+    bool sema_ok = sema.analyze(*ast);
+    assert(sema_ok);
 
     minigpu::IRGen irgen;
     auto module = irgen.emit_module(*ast);
