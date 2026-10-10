@@ -265,15 +265,6 @@ Validate emitted PTX using NVIDIA's assembler (if CUDA toolkit installed):
 ./scripts/validate_ptx.sh
 ```
 
----
-
-## Résumé Summary
-
-> **MiniGPU — Educational GPU Compiler | C++17**
-> - Designed a C-like GPU kernel language and built a complete lexical, AST, semantic analysis, and Three-Address Code intermediate representation pipeline.
-> - Implemented an optimizing compiler middle-end with control-flow graph reachability analysis, invariant verification, constant folding, constant propagation, dead code elimination, and common-subexpression elimination.
-> - Engineered backward data-flow liveness analysis and a Chaitin-Briggs graph-coloring register allocator with configurable physical register budgets and frame spilling.
-> - Developed a GPU target backend emitting NVIDIA PTX assembly (sm_75) and a CPU grid execution simulator validating numerical correctness against CPU references.
 
 ---
 
